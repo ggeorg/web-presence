@@ -185,7 +185,9 @@
 						style.width = "100%";
 						style.height = "100%";
 						style.backgroundColor = "#fff";
-						style.visibility = "hidden";
+						// XXX Safari has issues with CSS 'visibility', using 'display' instead.
+						//style.visibility = "hidden";
+						style.display = "none";
 						
 						// Get a reference to the first child
 						var theFirstChild = document.body.firstChild;
@@ -200,7 +202,8 @@
 							// Do we trust the sender of this message?
 							//if (e.origin === VCA._origin) {
 								style.zIndex = -1;
-								style.visibility = "hidden";
+								//style.visibility = "hidden";
+								style.display = "none";
 								callback.call(XDTalk, e);
 							//}
 						});
@@ -208,7 +211,8 @@
 					
 					var style = iframe.style;
 					style.zIndex = 999999999;
-					style.visibility = "visible";
+					//style.visibility = "visible";
+					style.display = "";
 				});
 			}
 		};
