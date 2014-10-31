@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+		<title>Freddo Telephony</title>
+		
+		<style>
+			html {
+				height: 100%;
+				-font-size: 62.5%; /* Setting base font to 10px and define all your units in rem. 1rem = 10px */
+			}
+			
+			body {
+				-margin: 0;
+				height: 100%;
+				display: block;
+				overflow: hidden;
+				font-family: sans-serif;
+			}
+			
+			article {
+				border: 1px dotted #ccc;
+				padding: 3px;
+			}
+		</style>
+		
+		<script type="text/javascript" src="../../x-dtalk.js"></script>
+		<script type="text/javascript" src="../../dtalk.js"></script>
+		<script type="text/javascript" src="freddo-telephony.js"></script>
+	</head>
+	<body>
+	
+		<p>
+			<article id='article-1'>Hello, Maria!</article>
+			<a id="message" href="#" onclick="FdTelephony.textIt('article-1')">Text It!</a>
+		</p>
+		
+		<p>
+			<article id='tel-1'>999999999</article>
+			<a id="message" href="#" onclick="FdTelephony.dialIt('tel-1')">Dial It!</a>
+		</p>
+
+		<script type="text/javascript">
+			DTalk.connect();
+		</script>
+	</body>
+</html>

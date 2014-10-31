@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+		<title>WebPresence Console</title>
+		
+		<!-- Building blocks -->
+		<link rel="stylesheet" href="style/action_menu.css">
+		<link rel="stylesheet" href="style/buttons.css">
+		<link rel="stylesheet" href="style/confirm.css">
+		<link rel="stylesheet" href="style/edit_mode.css">
+		<link rel="stylesheet" href="style/headers.css">
+		<link rel="stylesheet" href="style/input_areas.css">
+		<link rel="stylesheet" href="style/status.css">
+		<link rel="stylesheet" href="style/switches.css">
+		<link rel="stylesheet" href="style/drawer.css">
+		<link rel="stylesheet" href="style/lists.css">
+		<link rel="stylesheet" href="style/progress_activity.css">
+		<link rel="stylesheet" href="style/scrolling.css">
+		<link rel="stylesheet" href="style/seekbars.css">
+		<link rel="stylesheet" href="style/tabs.css">
+		<link rel="stylesheet" href="style/toolbars.css">
+		
+		<!-- Icons -->
+		<link rel="stylesheet" href="icons/styles/action_icons.css">
+		<link rel="stylesheet" href="icons/styles/media_icons.css">
+		<link rel="stylesheet" href="icons/styles/comms_icons.css">
+		<link rel="stylesheet" href="icons/styles/settings_icons.css">
+		
+		<!-- Transitions -->
+		<link rel="stylesheet" href="transitions.css">
+		
+		<!-- Util CSS: some extra tricks -->
+		<link rel="stylesheet" href="util.css">
+		
+		<!-- Additional markup to make Building Blocks kind of cross browser -->
+		<link rel="stylesheet" href="cross_browser.css">
+		
+		<script type="text/javascript" src="x-dtalk.js"></script>
+		<script type="text/javascript" src="dtalk.js"></script>
+	</head>
+	<body role="application">
+	
+		<section class="skin-comms" role="region">
+			<section role="region">
+				<header class="fixed">
+					<h1>Web Presence <em>v1.0-beta</em></h1>
+				</header>
+				<article class="content scrollable header">
+					<div data-type="list">
+						<ul id="device-list"></ul>
+					</div>
+				</article>
+			</section>
+		</section>
+		
+		<div style="position: absolute; left: 0; right: 0; bottom: 0; height: 1rem; padding: 3px; color: #ccc; background: #444; z-index: 999999999; text-align: center;">
+			&copy; 2013-2014 ArkaSoft LLC; All Rights Reserved.
+		</div>
+		
+		<a href="https://github.com/chillblox/web-presence/"><img style="position: absolute; top: 0; right: 0; border: 0; z-index: 999999999;" src="https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png"></a>
+
+		<script type="text/javascript">
+			function mkDeviceName(name) {
+				var idx = name.indexOf("@");
+				return ((idx !== -1) ? name.slice(0, idx) : name).replace("'", "&#39;").replace('"', '&#34;');
+			}
+			
+			function mkListItem(device) {
+				var icon
+				  , host = device.server.replace(/^ws/, 'http').replace(/dtalksrv$/, '');
+				
+				try {
+					if (device.dtype.indexOf("Telephony/1") !== -1) {
+						icon = "<aside class='icon comms-icon calllog-incomingcall'>asideicon</aside>";
+					} else {
+						icon = "<aside class='icon settings-icon donottrack'>asideicon</aside>";
+					}
+				} catch(e) {
+					icon = "<aside class='icon settings-icon donottrack'>asideicon</aside>";
+				}
+				
+				var html = 
+					"<a href='"+ host+"' target='_blank'>"
+					+ icon
+					+ "<p>"+mkDeviceName(device.name)+"</p>"
+					+ "<p>"+device.dtype+"</p>"
+					+ "</a>";
+				return html;
+			}
+			
+			function startup() {
+				DTalk.addEventListener('$dtalk.service.Presence.onresolved', function(e) {
+					var device = e.data.params;
+					var ul = document.getElementById('device-list');
+					var li = document.createElement('li');
+					li.setAttribute('id', device.name);
+					li.innerHTML = mkListItem(device);
+					ul.appendChild(li);
+				});
+				DTalk.addEventListener('$dtalk.service.Presence.onremoved', function(e) {
+					var device = e.data.params;
+					var ul = document.getElementById('device-list');
+					var li = document.getElementById(device.name);
+					ul.removeChild(li);
+				});
+				DTalk.doGet('dtalk.service.Presence', 'roster', function(e) {
+					var roster = e.data.result;
+					var ul = document.getElementById('device-list');
+					ul.innerHTML = "";
+					for (var i = 0, n = roster.length; i < n; i++) {
+						var device = roster[i];
+						var li = document.createElement('li');
+						li.setAttribute('id', device.name);
+						li.innerHTML = mkListItem(device);
+						ul.appendChild(li);
+					}
+				});
+			}
+			
+			DTalk.onopen = function() {
+				startup();
+			};
+			
+			DTalk.onclose = function() {
+				console.log('Connection closed!');
+			};
+			
+			DTalk.onerror = function(e) {
+				console.log('Connection error!');
+			};
+			
+			DTalk.connect();
+			
+		</script>
+		
+		<script>
+		  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+		
+		  ga('create', 'UA-56286929-1', 'auto');
+		  ga('send', 'pageview');
+		</script>
+	</body>
+</html>
