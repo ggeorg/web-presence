@@ -5,12 +5,12 @@
 
 	<context-param>
 		<param-name>dtalksrv.port</param-name>
-		<param-value>8080</param-value>
+		<param-value>8040</param-value>
 	</context-param>
 	
 	<context-param>
 		<param-name>dtalksrv.remoteAddr.policy</param-name>
-		<param-value>false</param-value>
+		<param-value>true</param-value>
 	</context-param>
 
 	<filter>
