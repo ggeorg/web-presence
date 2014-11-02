@@ -26,328 +26,380 @@ import freddo.dtalk.util.Log4JLogger;
 
 @WebListener
 public class WebPresenceContextListener extends DTalkContextListener {
-  private static final String TAG = LOG.tag(WebPresenceContextListener.class);
+	private static final String TAG;
 
-  static {
-    LOG.setLogLevel(LOG.VERBOSE);
-    LOG.setLogger(new Log4JLogger());
-  }
+	static {
+		LOG.setLogLevel(LOG.VERBOSE);
+		LOG.setLogger(new Log4JLogger());
 
-  private static final String PROP_DTALK_PRESENCE = "dtalk-presence";
+		TAG = LOG.tag(WebPresenceContextListener.class);
+	}
 
-  private final Map<String, List<DTalkServerEndpoint>> connGroups = new ConcurrentHashMap<String, List<DTalkServerEndpoint>>();
+	private static final String PROP_DTALK_PRESENCE = "dtalk-presence";
 
-  @SuppressWarnings("unused")
-  private FdServiceMgr mServiceMgr = null;
+	private final Map<String, List<DTalkServerEndpoint>> connGroups = new ConcurrentHashMap<String, List<DTalkServerEndpoint>>();
 
-  private String mRemoteAddrPolicy;
+	@SuppressWarnings("unused")
+	private FdServiceMgr mServiceMgr = null;
 
-  @Override
-  public void contextInitialized(ServletContextEvent sce) {
-    LOG.v(TAG, ">>> contextInitialized");
-    super.contextInitialized(sce);
+	private String mRemoteAddrPolicy;
 
-    // Read remote address policy from web.xml
-    mRemoteAddrPolicy = sce.getServletContext().getInitParameter(CONFIG_REMOTE_ADDR_POLICY);
-    if (mRemoteAddrPolicy != null) {
-      mRemoteAddrPolicy = mRemoteAddrPolicy.toLowerCase();
-    }
+	@Override
+	public void contextInitialized(ServletContextEvent sce) {
+		LOG.v(TAG, ">>> contextInitialized");
+		super.contextInitialized(sce);
 
-    // Create service manager and initialize services...
-    mServiceMgr = new FdServiceMgr(this);
-    // mServiceMgr.registerService(new FdStoreFactory());
+		// Read remote address policy from web.xml
+		mRemoteAddrPolicy = sce.getServletContext().getInitParameter(CONFIG_REMOTE_ADDR_POLICY);
+		if (mRemoteAddrPolicy != null) {
+			mRemoteAddrPolicy = mRemoteAddrPolicy.toLowerCase();
+		}
 
-    // addService(Constants.SERVICE_WEB_PRESENCE, new WebPresenceService());
-  }
+		// Create service manager and initialize services...
+		mServiceMgr = new FdServiceMgr(this);
+		// mServiceMgr.registerService(new FdStoreFactory());
 
-  protected String getRemoteAddress(Map<String, List<String>> requestParams) {
-    LOG.v(TAG, ">>> getRemoteAddress");
-    String remoteAddress = null;
-    if ("true".equalsIgnoreCase(mRemoteAddrPolicy)) {
-      List<String> remoteAddressParam = requestParams.get("dtalk-remote-address");
-      if (remoteAddressParam != null && remoteAddressParam.size() > 0) {
-        remoteAddress = remoteAddressParam.get(0);
-      }
-    } else {
-      remoteAddress = "common";
-    }
-    LOG.d(TAG, "RemoteAddress: %s", remoteAddress);
-    return remoteAddress;
-  }
+		// addService(Constants.SERVICE_WEB_PRESENCE, new WebPresenceService());
+	}
 
-  protected JSONObject getPresence(Map<String, List<String>> requestParams) {
-    LOG.v(TAG, ">>> getPresence");
-    List<String> presenceParam = requestParams.get("presence");
-    JSONObject presence = null;
-    if (presenceParam != null && presenceParam.size() > 0) {
-      String presenceStr = presenceParam.get(0);
-      if (presenceStr != null) {
-        byte[] bytesOfDecodedPresenceStr = null;
-        try {
-          bytesOfDecodedPresenceStr = Base64.decode(presenceStr);
-        } catch (IOException e1) {
-          LOG.e(TAG, e1.getMessage());
-        }
-        if (bytesOfDecodedPresenceStr != null && bytesOfDecodedPresenceStr.length > 0) {
-          presenceStr = new String(bytesOfDecodedPresenceStr);
-          if (presenceStr != null && presenceStr.trim().length() > 0) {
-            try {
-              presence = new JSONObject(presenceStr);
-            } catch (JSONException e) {
-              LOG.e(TAG, e.getMessage());
-            }
-          }
-        }
-      }
-    }
-    LOG.d(TAG, "Presence: %s", presence);
-    return presence;
-  }
+	protected String getRemoteAddress(Map<String, List<String>> requestParams) {
+		LOG.v(TAG, ">>> getRemoteAddress");
+		String remoteAddress = null;
+		if ("true".equalsIgnoreCase(mRemoteAddrPolicy)) {
+			List<String> remoteAddressParam = requestParams.get("dtalk-remote-address");
+			if (remoteAddressParam != null && remoteAddressParam.size() > 0) {
+				remoteAddress = remoteAddressParam.get(0);
+			}
+		} else {
+			remoteAddress = "common";
+		}
+		LOG.d(TAG, "RemoteAddress: %s", remoteAddress);
+		return remoteAddress;
+	}
 
-  @Override
-  protected void onConnectionOpen(DTalkServerEndpoint conn) {
-    LOG.v(TAG, ">>> onConnectionOpen: %s", conn.getSession().getRequestURI());
+	protected JSONObject getPresence(Map<String, List<String>> requestParams) {
+		LOG.v(TAG, ">>> getPresence");
+		List<String> presenceParam = requestParams.get("presence");
+		JSONObject presence = null;
+		if (presenceParam != null && presenceParam.size() > 0) {
+			String presenceStr = presenceParam.get(0);
+			if (presenceStr != null) {
+				byte[] bytesOfDecodedPresenceStr = null;
+				try {
+					bytesOfDecodedPresenceStr = Base64.decode(presenceStr);
+				} catch (IOException e1) {
+					LOG.e(TAG, e1.getMessage());
+				}
+				if (bytesOfDecodedPresenceStr != null && bytesOfDecodedPresenceStr.length > 0) {
+					presenceStr = new String(bytesOfDecodedPresenceStr);
+					if (presenceStr != null && presenceStr.trim().length() > 0) {
+						try {
+							presence = new JSONObject(presenceStr);
+						} catch (JSONException e) {
+							LOG.e(TAG, e.getMessage());
+						}
+					}
+				}
+			}
+		}
+		return presence;
+	}
 
-    HandshakeRequest req = conn.getHandshakeRequest();
-    Map<String, List<String>> requestParams = req.getParameterMap();
+	@Override
+	protected void onConnectionOpen(DTalkServerEndpoint conn) {
+		LOG.v(TAG, ">>> onConnectionOpen: %s", conn);
 
-    String remoteAddress = getRemoteAddress(requestParams);
-    if (remoteAddress != null && remoteAddress.trim().length() > 0) {
-      remoteAddress = remoteAddress.trim();
-      // synchronized (this) {
-      List<DTalkServerEndpoint> conns = connGroups.get(remoteAddress);
-      if (conns == null) {
-        conns = new CopyOnWriteArrayList<DTalkServerEndpoint>();
-        connGroups.put(remoteAddress, conns);
-      }
+		// List of all connections grouped by remote address.
+		List<DTalkServerEndpoint> conns;
 
-      LOG.d(TAG, "Connections for %s: %s", remoteAddress, conns);
-      LOG.d(TAG, "Adding new connection for %s: %s", remoteAddress, conn);
+		HandshakeRequest req = conn.getHandshakeRequest();
+		Map<String, List<String>> requestParams = req.getParameterMap();
+		LOG.d(TAG, "Request params: %s", requestParams);
 
-      conns.add(conn);
+		String remoteAddress = getRemoteAddress(requestParams);
+		if (remoteAddress != null && remoteAddress.trim().length() > 0) {
+			remoteAddress = remoteAddress.trim();
 
-      // }
+			// Get list of all connections grouped by remote address, create group if
+			// no available.
+			conns = connGroups.get(remoteAddress);
+			if (conns == null) {
+				synchronized (this) {
+					conns = connGroups.get(remoteAddress);
+					if (conns == null) {
+						conns = new CopyOnWriteArrayList<DTalkServerEndpoint>();
+						connGroups.put(remoteAddress, conns);
+					}
+				}
+			}
 
-    } else {
+			// Add new connection to connection group.
+			synchronized (this) {
+				conns.add(conn);
+			}
 
-      LOG.d(TAG, "Can't get remote address. Closing connection...");
+		} else {
+			LOG.w(TAG, "Can't get remote address. Closing connection...");
+			conn.close();
+			return;
+		}
 
-      try {
-        conn.getSession().close();
-      } catch (Exception e) {
-        // Ignore
-      }
-      return;
-    }
+		// Send presence ADDED event to the presence list and send presence list to
+		// the new presence.
+		final JSONObject presence = getPresence(requestParams);
+		onPresenceAdded(conns, conn, presence);
+	}
 
-    //
-    // Send presence ADDED event...
-    //
+	@Override
+	protected void onConnectionClose(DTalkServerEndpoint conn) {
+		LOG.v(TAG, ">>> onConnectionClose: %s", conn);
 
-    JSONObject presence = getPresence(requestParams);
-    if (presence != null) {
-      onPresenceAdded(conn, presence, remoteAddress);
-    }
+		// List of all connections grouped by remote address.
+		List<DTalkServerEndpoint> conns;
 
-    //
-    // Send presences list...
-    //
+		HandshakeRequest req = conn.getHandshakeRequest();
+		Map<String, List<String>> requestParams = req.getParameterMap();
+		LOG.d(TAG, "Request params: %s", requestParams);
 
-    if (presence == null) {
-      JSONArray presences = new JSONArray();
-      List<DTalkServerEndpoint> conns = connGroups.get(remoteAddress);
-      if (conns != null) {
-        for (DTalkServerEndpoint c : conns) {
-          if (conn.equals(c)) {
-            continue;
-          }
+		String remoteAddress = getRemoteAddress(requestParams);
+		if (remoteAddress != null && remoteAddress.trim().length() > 0) {
+			remoteAddress = remoteAddress.trim();
 
-          JSONObject p = (JSONObject) c.getSession().getUserProperties().get(PROP_DTALK_PRESENCE);
-          if (p != null) {
-            presences.put(p);
-          }
-        }
-      }
+			// Get list of all connections grouped by remote address, create group if
+			// no available.
+			conns = connGroups.get(remoteAddress);
+			if (conns != null) {
+				// Remove the connection from the connection group.
+				conns.remove(conn);
 
-      try {
-        JSONObject event = new JSONObject();
-        event.put(DTalk.KEY_BODY_VERSION, "1.0");
-        event.put(DTalk.KEY_BODY_SERVICE, Constants.SERVICE_WEB_PRESENCE);
-        event.put(DTalk.KEY_BODY_ACTION, Constants.SERVICE_WEB_PRESENCE_ADDED);
-        event.put(DTalk.KEY_BODY_PARAMS, presences);
-        sendMessage(conn, event);
-      } catch (Exception e) {
-        LOG.e(TAG, e.getMessage());
-      }
-    }
-  }
+				// Destroy connection group if empty.
+				if (conns.size() == 0) {
+					synchronized (this) {
+						if (conns.size() == 0) {
+							connGroups.remove(remoteAddress);
+						}
+					}
+				}
 
-  private void sendMessage(DTalkServerEndpoint conn, JSONObject message) throws JSONException {
-    conn.sendMessage(message, new AsyncCallback<Boolean>() {
-      @Override
-      public void onFailure(Throwable caught) {
-        caught.printStackTrace();
-      }
+				// Send REMOVED event to the presence list.
+				JSONObject presence = (JSONObject) conn.getSession().getUserProperties().get(PROP_DTALK_PRESENCE);
+				if (presence != null) {
+					onPresenceRemoved(conn, presence, remoteAddress);
+				}
+			}
+		}
+	}
 
-      @Override
-      public void onSuccess(Boolean result) {
-        // TODO Auto-generated method stub
-      }
-    });
-  }
+	private void onPresenceAdded(List<DTalkServerEndpoint> conns, DTalkServerEndpoint conn, JSONObject presence) {
+		LOG.v(TAG, ">>> onPresenceAdded: %s", presence);
 
-  @Override
-  protected void onConnectionClose(DTalkServerEndpoint conn) {
-    LOG.v(TAG, ">>> onConnectionClose");
+		JSONObject event;
 
-    HandshakeRequest req = conn.getHandshakeRequest();
-    Map<String, List<String>> requestParams = req.getParameterMap();
+		//
+		// If presence is 'null' just do Step: 3.
+		//
+		// Note: WebPages don't have presence.
+		//
 
-    String remoteAddress = getRemoteAddress(requestParams);
-    if (remoteAddress != null && remoteAddress.trim().length() > 0) {
-      remoteAddress = remoteAddress.trim();
-      // synchronized (this) {
-      List<DTalkServerEndpoint> conns = connGroups.get(remoteAddress);
-      if (conns != null) {
+		if (presence != null) {
 
-        LOG.d(TAG, "Removing connection for %s: %s", remoteAddress, conn);
+			// Store presence object & cleanup
+			LOG.d(TAG, "Store new presence to user properties.");
+			conn.getSession().getUserProperties().put(PROP_DTALK_PRESENCE, presence);
 
-        conns.remove(conn);
-        if (conns.size() == 0) {
-          connGroups.remove(remoteAddress);
-        }
+			//
+			// 1. Check if there is another connection with the same name, if yes
+			// close it.
+			//
 
-        LOG.d(TAG, "Connections for %s: %s", remoteAddress, conns);
+			final String name = presence.optString("name", null);
+			if (conns != null && name != null) {
+				for (DTalkServerEndpoint c : conns) {
+					// skip current connection
+					if (conn.equals(c)) {
+						continue;
+					}
 
-        // notify others...
-        JSONObject presence = (JSONObject) conn.getSession().getUserProperties().get(PROP_DTALK_PRESENCE);
-        if (presence != null) {
-          onPresenceRemoved(conn, presence, remoteAddress);
-        }
-      }
-      // }
-    }
-  }
+					JSONObject _presence = (JSONObject) c.getSession().getUserProperties().get(PROP_DTALK_PRESENCE);
+					if (_presence != null) {
+						if (name.equals(_presence.optString("name", null))) {
+							LOG.w(TAG, "Closing old connection with the same name: %s", name);
+							// onConnectionClose(c);
+							c.close();
+						}
+					}
+				}
+			}
 
-  protected void resetConnections() {
-    connGroups.clear();
-  }
+			//
+			// 2. Broadcast new presence.
+			//
 
-  private void onPresenceAdded(DTalkServerEndpoint conn, JSONObject presence, String remoteAddress) {
-    LOG.v(TAG, ">>> onPresenceAdded: %s, remoteAddress: %s", presence, remoteAddress);
+			LOG.d(TAG, "Broadcast new presence...");
 
-    //
-    // 1. Store presence object & cleanup
-    //
+			try {
+				event = newPresenceAddedEvent(presence);
+			} catch (JSONException e) {
+				LOG.e(TAG, e.getMessage(), e);
 
-    LOG.d(TAG, "Store new presence...");
+				// Close new connection and return;
+				conn.close();
+				return;
+			}
 
-    conn.getSession().getUserProperties().put(PROP_DTALK_PRESENCE, presence);
+			// Loop over all connections and notify them about the new presence.
+			for (DTalkServerEndpoint c : conns) {
+				// don't send to current connection
+				if (conn.equals(c)) {
+					continue;
+				}
 
-    // Get list of all connections grouped by remote address
-    List<DTalkServerEndpoint> conns = connGroups.get(remoteAddress);
-    if (conns != null) {
-      for (DTalkServerEndpoint c : conns) {
-        // skip current connection
-        if (conn.equals(c)) {
-          continue;
-        }
+				try {
+					LOG.d(TAG, "Sending message to: %s", c.getSession().getId());
+					sendMessage(c, event);
+				} catch (Exception e) {
+					LOG.w(TAG, e.getMessage(), e);
 
-        JSONObject _presence = (JSONObject) c.getSession().getUserProperties().get(PROP_DTALK_PRESENCE);
-        if (_presence != null) {
-          String name = presence.optString("name", null);
-          if (name != null && name.equals(_presence.optString("name", null))) {
-            onConnectionClose(conn);
-          }
-        }
-      }
-    }
+					// Close connection: c
+					c.close();
+				}
+			}
 
-    //
-    // 2. Broadcast new presence...
-    //
+		}
 
-    LOG.d(TAG, "Broadcast new presence...");
+		//
+		// 3. Send presence list to the new presence.
+		//
 
-    JSONObject event = new JSONObject();
+		final JSONArray presences = new JSONArray();
+		if (conns != null) {
+			// Loop over all connections to create the presence list.
+			for (DTalkServerEndpoint c : conns) {
+				// don't put the new presence in the presence list.
+				if (conn.equals(c)) {
+					continue;
+				}
 
-    try {
-      event.put(DTalk.KEY_BODY_VERSION, "1.0");
-      event.put(DTalk.KEY_BODY_SERVICE, Constants.SERVICE_WEB_PRESENCE);
-      event.put(DTalk.KEY_BODY_ACTION, Constants.SERVICE_WEB_PRESENCE_ADDED);
-      JSONArray params = new JSONArray();
-      params.put(presence);
-      event.put(DTalk.KEY_BODY_PARAMS, params);
-    } catch (JSONException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+				// Get connection presence object from the user properties.
+				JSONObject p = (JSONObject) c.getSession().getUserProperties().get(PROP_DTALK_PRESENCE);
+				if (p != null) {
+					presences.put(p);
+				}
+			}
+		}
 
-    if (conns != null) {
-      // String message = event.toString();
+		try {
+			event = newPresenceAddedEvent(presences);
+		} catch (JSONException e) {
+			LOG.e(TAG, e.getMessage(), e);
 
-      // LOG.d(TAG, "message: %s", message);
+			// Close new connection and return;
+			conn.close();
+			return;
+		}
 
-      for (DTalkServerEndpoint c : conns) {
-        // don't send to current connections
-        if (conn.equals(c)) {
-          continue;
-        }
-        try {
-          LOG.d(TAG, "Sending message to: %s", c.getSession().getId());
-          sendMessage(c, event);
-        } catch (Exception e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
-      }
+		try {
+			sendMessage(conn, event);
+		} catch (Exception e) {
+			LOG.e(TAG, e.getMessage());
 
-    } else {
-      // SHOULD NEVER HAPPEN!!!
-      LOG.d(TAG, "No connections found for: %s.", remoteAddress);
-    }
+			// Close connection if error.
+			conn.close();
+		}
+	}
 
-  }
+	private void onPresenceRemoved(DTalkServerEndpoint conn, JSONObject presence,
+			String remoteAddress) {
 
-  private void onPresenceRemoved(DTalkServerEndpoint conn, JSONObject presence,
-      String remoteAddress) {
+		//
+		// Broadcast presence REMOVED.
+		//
 
-    //
-    // 1. broadcast presence removed...
-    //
+		JSONObject event;
+		try {
+			event = newPresenceRemovedEvent(presence);
+		} catch (JSONException e) {
+			LOG.e(TAG, e.getMessage(), e);
 
-    JSONObject event = new JSONObject();
+			// XXX Very bad! Can we handle this...
+			return;
+		}
 
-    try {
-      event.put(DTalk.KEY_BODY_VERSION, "1.0");
-      event.put(DTalk.KEY_BODY_SERVICE, Constants.SERVICE_WEB_PRESENCE);
-      event.put(DTalk.KEY_BODY_ACTION, Constants.SERVICE_WEB_PRESENCE_REMOVED);
-      event.put(DTalk.KEY_BODY_PARAMS, presence);
-    } catch (JSONException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+		List<DTalkServerEndpoint> conns = connGroups.get(remoteAddress);
+		if (conns != null) {
+			for (DTalkServerEndpoint c : conns) {
+				// don't send to current connection
+				if (conn == c) {
+					continue;
+				}
 
-    List<DTalkServerEndpoint> conns = connGroups.get(remoteAddress);
-    if (conns != null) {
-      for (DTalkServerEndpoint c : conns) {
-        if (conn == c) {
-          continue;
-        }
+				try {
+					sendMessage(c, event);
+				} catch (Exception e) {
+					LOG.w(TAG, e.getMessage(), e);
 
-        try {
-          sendMessage(c, event);
-        } catch (Exception e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
-      }
-    }
-  }
+					// Close connection: c
+					c.close();
+				}
+			}
+		}
+	}
 
-  @Override
-  public void runOnUiThread(Runnable r) {
-    r.run();
-  }
+	private void sendMessage(final DTalkServerEndpoint conn, JSONObject message) throws JSONException {
+		conn.sendMessage(message, new AsyncCallback<Boolean>() {
+			@Override
+			public void onFailure(Throwable caught) {
+				caught.printStackTrace();
+
+				// Close the connection...
+				conn.close();
+			}
+
+			@Override
+			public void onSuccess(Boolean result) {
+				// TODO Auto-generated method stub
+			}
+		});
+	}
+
+	private JSONObject newPresenceAddedEvent(JSONObject presence) throws JSONException {
+		JSONArray params = new JSONArray();
+		params.put(presence);
+
+		JSONObject event = new JSONObject();
+		event.put(DTalk.KEY_BODY_VERSION, "1.0");
+		event.put(DTalk.KEY_BODY_SERVICE, Constants.SERVICE_WEB_PRESENCE);
+		event.put(DTalk.KEY_BODY_ACTION, Constants.SERVICE_WEB_PRESENCE_ADDED);
+		event.put(DTalk.KEY_BODY_PARAMS, params);
+
+		return event;
+	}
+
+	private JSONObject newPresenceAddedEvent(JSONArray presenceList) throws JSONException {
+		JSONArray params = new JSONArray();
+		params.put(presenceList);
+
+		JSONObject event = new JSONObject();
+		event.put(DTalk.KEY_BODY_VERSION, "1.0");
+		event.put(DTalk.KEY_BODY_SERVICE, Constants.SERVICE_WEB_PRESENCE);
+		event.put(DTalk.KEY_BODY_ACTION, Constants.SERVICE_WEB_PRESENCE_ADDED);
+		event.put(DTalk.KEY_BODY_PARAMS, params);
+
+		return event;
+	}
+
+	private JSONObject newPresenceRemovedEvent(JSONObject presence) throws JSONException {
+		JSONObject event = new JSONObject();
+		event.put(DTalk.KEY_BODY_VERSION, "1.0");
+		event.put(DTalk.KEY_BODY_SERVICE, Constants.SERVICE_WEB_PRESENCE);
+		event.put(DTalk.KEY_BODY_ACTION, Constants.SERVICE_WEB_PRESENCE_REMOVED);
+		event.put(DTalk.KEY_BODY_PARAMS, presence);
+		return event;
+	}
+
+	@Override
+	public void runOnUiThread(Runnable r) {
+		r.run();
+	}
 
 }
