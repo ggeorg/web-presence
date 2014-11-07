@@ -376,14 +376,11 @@ public class WebPresenceContextListener extends DTalkContextListener {
 	}
 
 	private JSONObject newPresenceAddedEvent(JSONArray presenceList) throws JSONException {
-		JSONArray params = new JSONArray();
-		params.put(presenceList);
-
 		JSONObject event = new JSONObject();
 		event.put(DTalk.KEY_BODY_VERSION, "1.0");
 		event.put(DTalk.KEY_BODY_SERVICE, Constants.SERVICE_WEB_PRESENCE);
 		event.put(DTalk.KEY_BODY_ACTION, Constants.SERVICE_WEB_PRESENCE_ADDED);
-		event.put(DTalk.KEY_BODY_PARAMS, params);
+		event.put(DTalk.KEY_BODY_PARAMS, presenceList);
 
 		return event;
 	}

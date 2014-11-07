@@ -9,7 +9,7 @@
 	</context-param>
 	
 	<context-param>
-		<param-name>dtalksrv.remoteAddr.policy</param-name>
+		<param-name>dtalk.remoteAddr.policy</param-name>
 		<param-value>true</param-value>
 	</context-param>
 
